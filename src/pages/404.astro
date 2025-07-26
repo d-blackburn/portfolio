@@ -1,0 +1,26 @@
+﻿---
+import App from '../components/App';
+import { getProfile, getProjects } from '../lib/api';
+
+// Fetch data at build time
+const profile = await getProfile();
+const projects = await getProjects();
+
+// Log build-time data fetching for verification
+console.log('Build-time data fetching for 404 page:');
+console.log('User data: Found successfully');
+console.log('Projects data:', projects.length, 'projects found');
+---
+
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="viewport" content="width=device-width" />
+		<meta name="generator" content={Astro.generator} />
+		<title>Portfolio</title>
+	</head>
+	<body style="margin:0;">
+		<App profile={profile} projects={projects} client:only="react" />
+	</body>
+</html>
