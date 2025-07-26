@@ -1,0 +1,123 @@
+﻿name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Create .env file
+        run: |
+          cat << 'EOF' > .env
+          PUBLIC_HYGRAPH_ENDPOINT=${{ secrets.PUBLIC_HYGRAPH_ENDPOINT }}
+          PUBLIC_HYGRAPH_TOKEN=${{ secrets.PUBLIC_HYGRAPH_TOKEN }}
+          EOF
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload build artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+      - name: Create dist.zip
+        run: |
+          cd dist
+          zip -r ../dist.zip .
+          cd ..
+
+      - name: Upload dist.zip artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-zip
+          path: dist.zip
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download dist.zip artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-zip
+          path: .
+
+      - name: Read version from package.json
+        id: get_version
+        run: |
+          echo "version=$(node -e "console.log(require('./package.json').version)")" >> $GITHUB_OUTPUT
+
+      - name: Create and push git tag if missing
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="v${{ steps.get_version.outputs.version }}"
+          
+          git fetch --tags origin || true
+          if git ls-remote --tags origin | grep -q "refs/tags/${TAG}$"; then
+            echo "Tag ${TAG} already exists on remote"
+          else
+            echo "Creating and pushing tag ${TAG}"
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag -a "${TAG}" -m "Release ${TAG}"
+            git push origin "${TAG}"
+          fi
+
+      - name: Create/update release and upload dist.zip
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="v${{ steps.get_version.outputs.version }}"
+
+          # Create release if it doesn't exist
+          gh release create "${TAG}" \
+            --title "${TAG}" \
+            --notes "Release ${TAG}" \
+            --target ${{ github.sha }} \
+            || true # Ignore error if release exists
+
+          # Upload/update dist.zip asset
+          gh release upload "${TAG}" dist.zip --clobber

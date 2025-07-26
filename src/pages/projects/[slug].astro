@@ -1,0 +1,64 @@
+﻿---
+import { getProjects } from '../../lib/api';
+import {ProjectArticle} from '../../components/projects/ProjectArticle';
+import {marked} from "marked";
+import {muiRenderer} from "../../lib/marked";
+
+// This function is required for static site generation with dynamic routes
+export async function getStaticPaths() {
+  // Fetch all projects
+  const projects = await getProjects();
+  
+  // Create paths for each project
+  const paths = [];
+  
+  for (const project of projects) {
+    // Create both encoded and non-encoded versions of the slug
+    const encodedSlug = encodeURIComponent(project.name);
+    const nonEncodedSlug = project.name;
+    
+    // Add path for the encoded slug
+    paths.push({
+      params: { slug: encodedSlug },
+      props: { project }
+    });
+    
+    // Add path for the non-encoded slug if it's different
+    if (encodedSlug !== nonEncodedSlug) {
+      paths.push({
+        params: { slug: nonEncodedSlug },
+        props: { project }
+      });
+    }
+  }
+  
+  return paths;
+}
+
+marked.use({
+  renderer: muiRenderer
+})
+
+// Get the project from props
+const { project } = Astro.props;
+
+// Convert markdown to HTML with MUI classes injected
+const markdownContent = project.details || '';
+// Ensure we're passing a string to parse and handle the result properly
+const htmlContent = marked.parse(String(markdownContent));
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{project.name} - Portfolio</title>
+  </head>
+  <body style="margin:0;">
+    <ProjectArticle project={project}>
+      <div set:html={htmlContent} />
+    </ProjectArticle>
+  </body>
+</html>
