@@ -24,30 +24,35 @@ interface ExperienceArticleProps {
 }
 
 const ExperienceArticle: React.FC<ExperienceArticleProps> = ({experience, children}) => {
-    
+
     return (
-        <Container maxWidth={"md"}>
+        <Container maxWidth={"md"} sx={{minHeight: "100vh", alignContent: "center"}}>
             <Breadcrumbs separator={<FaAngleRight/>}>
                 <IconButton color={"neutral"} component={Link} href={"/"}>
                     <FaHouse/>
                 </IconButton>
-                <Button variant={"plain"} color={"neutral"} component={Link} href={"/experience"}>
-                    Experience
+                <Button variant={"plain"} color={"neutral"} component={Link} href={"/experiences"}>
+                    Experiences
                 </Button>
                 <Button variant={"plain"} color={"neutral"} disabled>
                     {experience.name}
                 </Button>
             </Breadcrumbs>
-            <Stack direction={"row"} spacing={2} sx={{alignItems: "center"}}>
-                <Typography level={"h1"}>
-                    {experience.name}
-                </Typography>
-                <Chip color={"primary"}>{experience.type}</Chip>
-            </Stack>
-            <Typography level={"body-lg"} textColor={"text.tertiary"} gutterBottom>
-                {experience.subheading}
-            </Typography>
-            {children}
+            <Card>
+                <CardOverflow sx={{pt: 2}}>
+                    <Stack direction={"row"} spacing={2} sx={{alignItems: "center"}}>
+                        <Typography level={"h1"} gutterBottom>
+                            {experience.name}
+                        </Typography>
+                        <Chip color={"primary"}>{experience.type}</Chip>
+                    </Stack>
+                    <Typography level={"body-lg"} textColor={"text.tertiary"} gutterBottom>
+                        {experience.subheading}
+                    </Typography>
+                </CardOverflow>
+                <Divider/>
+                {children}
+            </Card>
         </Container>
     );
 }

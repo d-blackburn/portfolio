@@ -1,0 +1,112 @@
+﻿name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload build artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download dist zip artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-zip
+          path: .
+
+      - name: Read version from package.json
+        id: get_version
+        run: |
+          echo "version=$(node -e \"console.log(JSON.parse(require('fs').readFileSync('package.json','utf8')).version)\")" >> $GITHUB_OUTPUT
+
+      - name: Create and push git tag if missing
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="v${{ steps.get_version.outputs.version }}"
+          # ensure we have tags
+          git fetch --tags origin || true
+
+          if git ls-remote --tags origin | grep -q "refs/tags/${TAG}$"; then
+            echo "Tag ${TAG} already exists on remote"
+          else
+            echo "Creating and pushing tag ${TAG}"
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag -a "${TAG}" -m "Release ${TAG}"
+            git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}" "refs/tags/${TAG}"
+          fi
+
+      - name: Ensure release exists (create if missing) and set upload_url
+        id: ensure_release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="v${{ steps.get_version.outputs.version }}"
+          OWNER_REPO="$GITHUB_REPOSITORY"
+          API_URL="https://api.github.com/repos/${OWNER_REPO}"
+
+          # Try to get an existing release for the tag
+          resp=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" "${API_URL}/releases/tags/${TAG}") || true
+
+          if echo "$resp" | grep -q '"message": "Not Found"'; then
+            echo "Release for ${TAG} not found — creating"
+            resp=$(curl -s -X POST -H "Authorization: token ${GITHUB_TOKEN}" -H "Content-Type: application/json" \
+              -d "{\"tag_name\": \"${TAG}\", \"name\": \"${TAG}\", \"body\": \"Release ${TAG}\"}" \
+              "${API_URL}/releases")
+          else
+            echo "Found existing release for ${TAG}"
+          fi
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

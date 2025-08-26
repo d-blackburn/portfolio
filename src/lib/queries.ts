@@ -2,8 +2,9 @@
 import type {Profile} from '../models/profile.ts';
 import type {Project} from "../models/project.ts";
 import type {Experience} from "../models/experience.ts";
+import type {Skill} from "../models/skill.ts";
+import type {Interest} from "../models/interest.ts";
 
-// Query to fetch user data
 export const GET_PROFILE = gql`
   query GetProfile {
     profiles(first: 1) {
@@ -21,7 +22,6 @@ export const GET_PROFILE = gql`
   }
 `;
 
-// Query to fetch projects data
 export const GET_PROJECTS = gql`
   query GetProjects {
     projects {
@@ -46,7 +46,7 @@ export const GET_PROJECTS = gql`
   }
 `;
 
-// Query to fetch a single project by name
+
 export const GET_PROJECT_BY_NAME = gql`
   query GetProjectByName($name: String!) {
     project(where: {name: $name}) {
@@ -73,7 +73,6 @@ export const GET_PROJECT_BY_NAME = gql`
   }
 `;
 
-// Query to fetch experiences data
 export const GET_EXPERIENCES = gql`
   query GetExperiences {
     experiences {
@@ -87,22 +86,62 @@ export const GET_EXPERIENCES = gql`
   }
 `;
 
-// Type for the response from the GetUser query
+export const GET_SKILLS = gql`
+  query GetSkills($first: Int, $skip: Int) {
+    skills(first: $first, skip: $skip) {
+      name
+      type
+      level
+      color {
+        hex
+        rgba {
+            r
+            g
+            b
+            a
+        }
+      }
+      logo {
+        url
+      }
+      link
+    }
+  }
+`;
+
+export const GET_INTERESTS = gql`
+  query GetInterests($first: Int, $skip: Int) {
+    interests(first: $first, skip: $skip) {
+      name
+      link
+      images {
+        url
+      }
+    }
+  }
+`;
+
+
 export interface GetProfileResponse {
     profiles: Profile[];
 }
 
-// Type for the response from the GetProjects query
 export interface GetProjectsResponse {
     projects: Project[];
 }
 
-// Type for the response from the GetProjectByName query
 export interface GetProjectByNameResponse {
     project: Project;
 }
 
-// Type for the response from the GetProjects query
 export interface GetExperiencesResponse {
     experiences: Experience[];
+}
+
+export interface GetSkillsResponse {
+    skills: Skill[];
+}
+
+export interface GetInterestsResponse {
+    interests: Interest[];
 }

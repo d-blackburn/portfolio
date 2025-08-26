@@ -1,6 +1,4 @@
-﻿import string from "zod/src/v3/benchmarks/string.ts";
-
-export interface Profile {
+﻿export interface Profile {
     avatar: {
         url: string;
     };
