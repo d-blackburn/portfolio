@@ -1,28 +1,39 @@
 ﻿---
 import App from '../components/App';
-import {getExperiences, getProfile, getProjects} from '../lib/api';
+import {getExperiences, getInterests, getProfile, getProjects, getSkills} from '../lib/api';
 
 // Fetch data at build time
 const profile = await getProfile();
 const projects = await getProjects();
 const experiences = await getExperiences();
+const skills = await getSkills();
+const interests = await getInterests();
 
 // Log build-time data fetching for verification
 console.log('Build-time data fetching for 404 page:');
 console.log('User data: Found successfully');
 console.log('Projects data:', projects.length, 'projects found');
 console.log('Experiences data:', experiences.length, 'experiences found');
+console.log('Skills data:', skills.length, 'skills found');
+console.log('Interests data:', interests.length, 'interests found');
 ---
 
 <html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Portfolio</title>
-	</head>
-	<body style="margin:0;">
-		<App profile={profile} projects={projects} experiences={experiences} client:only="react" />
-	</body>
+<head>
+    <meta charset="utf-8"/>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+    <meta name="viewport" content="width=device-width"/>
+    <meta name="generator" content={Astro.generator}/>
+    <title>Portfolio</title>
+</head>
+<body style="margin:0;">
+<App
+        profile={profile}
+        projects={projects}
+        experiences={experiences}
+        skills={skills}
+        interests={interests}
+        client:only="react"
+/>
+</body>
 </html>

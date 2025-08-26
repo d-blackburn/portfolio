@@ -5,20 +5,27 @@ import ProfileCard from './ProfileCard.tsx';
 import type {Profile} from "../models/profile.ts";
 import type {Project} from "../models/project.ts";
 import {ExperienceTimeline} from "./experiences/ExperienceTimeline.tsx";
-import type { Experience } from '../models/experience.ts';
+import type {Experience} from '../models/experience.ts';
 import {ProjectCard} from "./projects/ProjectCard.tsx";
+import type {Skill} from "../models/skill.ts";
+import {SkillGrid} from "./skills/SkillGrid.tsx";
+import {useCallback} from "react";
+import type {Interest} from "../models/interest.ts";
+import {InterestCard} from "./interests/InterestCard.tsx";
 
 interface HomeProps {
     profile: Profile;
     projects?: Project[];
     experiences?: Experience[];
+    skills?: Skill[];
+    interests?: Interest[];
     tabParam?: number;
 }
 
-export default function Home({profile, projects = [], experiences = [], tabParam = 0}: HomeProps) {
+export default function Home({profile, projects = [], experiences = [], skills = [], interests = [], tabParam = 0}: HomeProps) {
     const navigate = useNavigate();
-    const tabLabels = ['Projects', 'Experience', 'Skills', 'Interests'];
-    const tabPaths = ['projects', 'experience', 'skills', 'interests'];
+    const tabLabels = ['Experiences', 'Skills', 'Projects', 'Interests'];
+    const tabPaths = ['experiences', 'skills', 'projects', 'interests'];
 
     // Use the tabParam from React Router
     const [tab, setTab] = React.useState(tabParam);
@@ -29,10 +36,10 @@ export default function Home({profile, projects = [], experiences = [], tabParam
     }, [tabParam]);
 
     // Navigate to the new tab using React Router
-    const handleTabChange = (idx: number) => {
+    const handleTabChange = useCallback((idx: number) => {
         setTab(idx);
         navigate(`/${tabPaths[idx]}`);
-    };
+    }, [navigate, tabPaths]);
 
     const error = projects.length === 0 ? 'No projects found' : null;
 
@@ -57,7 +64,9 @@ export default function Home({profile, projects = [], experiences = [], tabParam
                         </ButtonGroup>
                     </Box>
                     <Box height={"100%"} overflow={"auto"}>
-                        {tab === 0 && (projects.length > 0 ? (
+                        {tab === 0 && <ExperienceTimeline experiences={experiences}/>}
+                        {tab === 1 && <SkillGrid skills={skills}/>}
+                        {tab === 2 && (projects.length > 0 ? (
                                 <Stack spacing={2}>
                                     {projects.map((project, idx) => (
                                         <ProjectCard key={idx} project={project} index={idx}/>
@@ -76,11 +85,25 @@ export default function Home({profile, projects = [], experiences = [], tabParam
                                 </Box>
                             )
                         )}
-                        {tab === 1 && <ExperienceTimeline
-                            experiences={experiences}
-                        />}
-                        {tab === 2 && <div>Skills content goes here.</div>}
-                        {tab === 3 && <div>Interests content goes here.</div>}
+                        {tab === 3 && (interests.length > 0 ? (
+                                <Stack spacing={2}>
+                                    {interests.map((project, idx) => (
+                                        <InterestCard key={idx} interest={project}/>
+                                    ))}
+                                </Stack>
+                            ) : (
+                                <Box sx={{
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    height: '100%'  
+                                }}>
+                                    <Typography level="body-md" color="neutral">
+                                        {error || 'No interests found'}
+                                    </Typography>
+                                </Box>
+                            )
+                        )}
                     </Box>
                 </Grid>
             </Grid>
