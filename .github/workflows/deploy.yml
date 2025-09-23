@@ -4,6 +4,8 @@ on:
   push:
     branches: [ "main" ]
   workflow_dispatch:
+  repository_dispatch:
+    types: [hygraph_update]
 
 permissions:
   contents: write
@@ -71,6 +73,7 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
   release:
+    if: github.event_name != 'repository_dispatch'
     needs: build
     runs-on: ubuntu-latest
     steps:

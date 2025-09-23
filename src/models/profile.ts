@@ -9,4 +9,7 @@
     linkedin: string;
     github: string;
     email: string;
+    cv: {
+        url: string;
+    }
 }

@@ -18,6 +18,9 @@ export const GET_PROFILE = gql`
       linkedin
       github
       email
+      cv {
+        url
+      }
     }
   }
 `;
